@@ -756,6 +756,17 @@ struct libevdev;
 
 /**
  * @ingroup events
+ *
+ * A structure to handle polling. It associates an input device with a bitflag,
+ * which is zero if no events are pending, and non-zero otherwise.
+ */
+struct libevdev_poll {
+	const struct libevdev *dev;
+	short pending;
+};
+
+/**
+ * @ingroup events
  */
 enum libevdev_read_flag {
 	LIBEVDEV_READ_FLAG_SYNC		= 1, /**< Process data in sync mode */
@@ -1165,6 +1176,21 @@ int libevdev_next_event(struct libevdev *dev, unsigned int flags, struct input_e
  * @note This function is signal-safe.
  */
 int libevdev_has_event_pending(struct libevdev *dev);
+
+/**
+ * @ingroup events
+ *
+ * Block until events are waiting on any one of given devices. In a
+ * similar vein to libevedev_has_event_pending(), this does not read
+ * an event off of any of the devices, but rather ensures that one is
+ * present.
+ *
+ * @param devs The poll entries to operate over.
+ * @param ndevs The number of poll entries pointed to.
+ * @param timeout The amount of time to wait while polling, identical
+ * to the timeout parameter to poll(2).
+ */
+int libevdev_poll_devs(struct libevdev_poll *devs, int ndevs, int timeout);
 
 /**
  * @ingroup bits

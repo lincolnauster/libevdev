@@ -47,6 +47,7 @@ global:
 	libevdev_grab;
 	libevdev_has_event_code;
 	libevdev_has_event_pending;
+	libevdev_poll_devs;
 	libevdev_has_event_type;
 	libevdev_has_property;
 	libevdev_kernel_set_abs_info;

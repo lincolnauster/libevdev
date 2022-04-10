@@ -1226,6 +1226,53 @@ libevdev_has_event_pending(struct libevdev *dev)
 	return (rc >= 0) ? rc : -errno;
 }
 
+LIBEVDEV_EXPORT int
+libevdev_poll_devs(struct libevdev_poll *devs, int ndevs, int timeout)
+{
+	int rc, fd, pending;
+	struct pollfd *fds;
+
+	pending = 0;
+	for (int i = 0; i < ndevs; i++) {
+		rc = libevdev_has_event_pending(devs[i].dev);
+		if (rc < 0) return rc;
+
+		devs[i].pending = rc;
+		pending |= rc;
+	}
+
+	if (pending)
+		return 0;
+
+	// XXX: don't allocate and init, make libevdev_poll opaque and
+	// provide a nice constructor.
+	fds = malloc(sizeof(struct pollfd) * ndevs);
+	if (!fds)
+		return -ENOMEM;
+
+	rc = 0;
+
+	for (int i = 0; i < ndevs; i++) {
+		fd = libevdev_get_fd(devs[i].dev);
+		if (fd < 0) {
+			rc = -EINVAL;
+			goto ret;
+		} else
+			fds[i].fd = fd;
+
+		fds[i].events = POLLIN;
+	}
+
+	rc = poll(fds, ndevs, timeout);
+
+	for (int i = 0; i < ndevs; i++)
+		devs[i].pending = fds[i].revents & POLLIN;
+
+ret:
+	free(fds);
+	return rc;
+}
+
 LIBEVDEV_EXPORT const char *
 libevdev_get_name(const struct libevdev *dev)
 {
